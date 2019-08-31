@@ -15,7 +15,7 @@ describe('TranslateLoader', () => {
         TranslateModule.forRoot({
           loader: {
             provide: TranslateLoader,
-            useFactory: (httpClient: HttpClient) => new TranslateHttpLoader(httpClient),
+            useFactory: (httpClient: HttpClient) => new TranslateHttpLoader(httpClient,"/assets/i18n/", ".json", "en"),
             deps: [HttpClient]
           }
         })
@@ -51,6 +51,29 @@ describe('TranslateLoader', () => {
       "TEST2": "This is another test"
     });
 
+    // this will request the translation from downloaded translations without making a request to the backend
+    translate.get('TEST2').subscribe((res: string) => {
+      expect(res).toEqual('This is another test');
+    });
+  });
+
+  it('should be able to get translations - fallback', () => {
+    translate.use('nl');
+
+    // this will request the translation from the backend because we use a static files loader for TranslateService
+    translate.get('TEST').subscribe((res: string) => {
+      expect(res).toEqual('This is a test');
+    });
+
+    http.expectOne('/assets/i18n/nl.json').error(new ErrorEvent('network error'));
+    
+    http.expectOne('/assets/i18n/en.json').flush({
+      "TEST": "This is a test",
+      "TEST2": "This is another test"
+    });
+
+
+    
     // this will request the translation from downloaded translations without making a request to the backend
     translate.get('TEST2').subscribe((res: string) => {
       expect(res).toEqual('This is another test');
